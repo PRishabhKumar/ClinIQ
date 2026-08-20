@@ -82,4 +82,29 @@ model Appointment {
   createdAt        DateTime @default(now())
 
   @@index([doctorId, slotStart])
+
+  symptomForm      SymptomForm?
+  preVisitSummary  PreVisitSummary?
+}
+
+model SymptomForm {
+  id             String   @id @default(uuid())
+  appointmentId  String   @unique
+  appointment    Appointment @relation(fields: [appointmentId], references: [id])
+  rawText        String
+  durationDays   Int?
+  severity       String?
+  submittedAt    DateTime @default(now())
+}
+
+model PreVisitSummary {
+  id             String   @id @default(uuid())
+  appointmentId  String   @unique
+  appointment    Appointment @relation(fields: [appointmentId], references: [id])
+  urgency        Urgency?
+  chiefComplaint String?
+  suggestedQuestions String[]
+  status         String    // "OK" | "FAILED" | "PENDING_RETRY"
+  rawLlmResponse Json?
+  generatedAt    DateTime?
 }

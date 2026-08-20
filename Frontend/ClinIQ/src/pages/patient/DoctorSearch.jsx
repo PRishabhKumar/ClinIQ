@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import SlotPicker from '../../components/SlotPicker';
 
 const DoctorSearch = () => {
   const [doctors, setDoctors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
   const { accessToken } = useAuth();
 
   useEffect(() => {
@@ -28,10 +30,9 @@ const DoctorSearch = () => {
   }, [accessToken]);
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-4xl mx-auto py-8 relative">
       <h2 className="text-3xl font-bold text-gray-800 mb-6">Find a Doctor</h2>
       
-      {/* Simple Search bar (visual only for now) */}
       <div className="mb-8">
         <input 
           type="text" 
@@ -49,20 +50,32 @@ const DoctorSearch = () => {
         )}
         
         {doctors.map(doctor => (
-          <div key={doctor.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow">
-            <h3 className="text-xl font-semibold text-gray-900 mb-1">{doctor.user.name}</h3>
-            <p className="text-blue-600 font-medium mb-3">
-              {doctor.specializations.join(', ')}
-            </p>
-            <div className="text-gray-600 text-sm mb-4">
-              <p>Email: {doctor.user.email}</p>
+          <div key={doctor.id} className="bg-white rounded-xl shadow-md p-6 border border-gray-100 hover:shadow-lg transition-shadow flex flex-col justify-between">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-1">{doctor.user.name}</h3>
+              <p className="text-blue-600 font-medium mb-3">
+                {doctor.specializations.join(', ')}
+              </p>
+              <div className="text-gray-600 text-sm mb-4">
+                <p>Email: {doctor.user.email}</p>
+              </div>
             </div>
-            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            <button 
+              onClick={() => setSelectedDoctor(doctor)}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors mt-auto">
               View Availability
             </button>
           </div>
         ))}
       </div>
+
+      {selectedDoctor && (
+        <SlotPicker 
+          doctorId={selectedDoctor.id} 
+          doctorName={selectedDoctor.user.name} 
+          onClose={() => setSelectedDoctor(null)} 
+        />
+      )}
     </div>
   );
 };
