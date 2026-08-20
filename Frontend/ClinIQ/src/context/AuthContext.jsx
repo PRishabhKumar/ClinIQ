@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, loading, accessToken: localStorage.getItem('accessToken') }}>
       {!loading && children}
     </AuthContext.Provider>
   );

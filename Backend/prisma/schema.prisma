@@ -13,6 +13,20 @@ enum Role {
   ADMIN
 }
 
+enum AppointmentStatus {
+  HELD
+  BOOKED
+  CANCELLED
+  COMPLETED
+  LEAVE_CANCELLED
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+}
+
 model User {
   id            String   @id @default(uuid())
   email         String   @unique
@@ -21,4 +35,51 @@ model User {
   name          String
   phone         String?
   createdAt     DateTime @default(now())
+
+  doctorProfile DoctorProfile?
+  patientAppointments Appointment[] @relation("PatientAppointments")
+}
+
+model DoctorProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  specializations String[]
+  slotDurationMin Int
+  workingHours    WorkingHour[]
+  leaveDays       LeaveDay[]
+  appointments    Appointment[] @relation("DoctorAppointments")
+}
+
+model WorkingHour {
+  id          String   @id @default(uuid())
+  doctorId    String
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id])
+  weekday     Int
+  startTime   String
+  endTime     String
+}
+
+model LeaveDay {
+  id          String   @id @default(uuid())
+  doctorId    String
+  doctor      DoctorProfile @relation(fields: [doctorId], references: [id])
+  date        DateTime   @db.Date
+  reason      String?
+  createdAt   DateTime @default(now())
+}
+
+model Appointment {
+  id               String   @id @default(uuid())
+  patientId        String
+  patient          User     @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctorId         String
+  doctor           DoctorProfile @relation("DoctorAppointments", fields: [doctorId], references: [id])
+  slotStart        DateTime
+  slotEnd          DateTime
+  status           AppointmentStatus @default(HELD)
+  holdExpiresAt    DateTime?
+  createdAt        DateTime @default(now())
+
+  @@index([doctorId, slotStart])
 }

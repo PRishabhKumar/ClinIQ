@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { ProtectedRoute } from './routes/AppRoutes';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import DoctorSearch from './pages/patient/DoctorSearch';
 import { useAuth } from './context/AuthContext';
 
 function App() {
@@ -26,7 +27,7 @@ function App() {
           {/* Protected Routes */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<div>Patient Dashboard - Welcome {user?.name}</div>} />
-            <Route path="/doctors" element={<div>Doctor Search</div>} />
+            <Route path="/doctors" element={<DoctorSearch />} />
           </Route>
 
           <Route element={<ProtectedRoute allowedRoles={['DOCTOR']} />}>
