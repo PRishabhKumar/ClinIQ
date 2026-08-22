@@ -108,3 +108,13 @@ model PreVisitSummary {
   rawLlmResponse Json?
   generatedAt    DateTime?
 }
+
+model NotificationLog {
+  id            String   @id @default(uuid())
+  appointmentId String
+  type          String   // "BOOKING_CONFIRMATION", "CANCELLATION", "LEAVE_CONFLICT", "REMINDER"
+  status        String   // "PENDING", "SENT", "FAILED"
+  attempts      Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}

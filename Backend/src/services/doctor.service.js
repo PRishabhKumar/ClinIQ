@@ -129,6 +129,90 @@ class DoctorService {
 
     return slots.filter(s => s.available);
   }
+
+  async addLeaveDay(doctorId, dateString, reason, confirm) {
+    const date = new Date(dateString);
+    const startOfDay = new Date(dateString);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(dateString);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    // Find conflicting BOOKED appointments
+    const conflicts = await prisma.appointment.findMany({
+      where: {
+        doctorId,
+        status: 'BOOKED',
+        slotStart: {
+          gte: startOfDay,
+          lt: endOfDay
+        }
+      },
+      include: {
+        patient: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    if (!confirm) {
+      return { conflicts };
+    }
+
+    // Wrap in transaction if confirmed
+    const result = await prisma.$transaction(async (tx) => {
+      // 1. Create leave day
+      const leaveDay = await tx.leaveDay.create({
+        data: {
+          doctorId,
+          date: startOfDay,
+          reason
+        }
+      });
+
+      // 2. Mark conflicting appointments as LEAVE_CANCELLED
+      if (conflicts.length > 0) {
+        await tx.appointment.updateMany({
+          where: {
+            id: { in: conflicts.map(c => c.id) }
+          },
+          data: { status: 'LEAVE_CANCELLED' }
+        });
+
+        // 3. Create NotificationLog entries for each
+        const notifications = conflicts.map(c => ({
+          appointmentId: c.id,
+          channel: 'EMAIL', // Stubbing email notification
+          type: 'LEAVE_CONFLICT',
+          recipient: c.patient.email,
+          status: 'PENDING',
+        }));
+
+        await tx.notificationLog.createMany({
+          data: notifications
+        });
+      }
+
+      return { leaveDay, conflictsCancelled: conflicts.length };
+    });
+
+    return result;
+  }
+
+  async removeLeaveDay(doctorId, leaveId) {
+    const leaveDay = await prisma.leaveDay.findUnique({
+      where: { id: leaveId }
+    });
+
+    if (!leaveDay || leaveDay.doctorId !== doctorId) {
+      throw new Error("Leave day not found or unauthorized");
+    }
+
+    await prisma.leaveDay.delete({
+      where: { id: leaveId }
+    });
+
+    return { success: true };
+  }
 }
 
 export default new DoctorService();

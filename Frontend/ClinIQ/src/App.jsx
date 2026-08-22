@@ -3,6 +3,7 @@ import { ProtectedRoute } from './routes/AppRoutes';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import DoctorSearch from './pages/patient/DoctorSearch';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import { useAuth } from './context/AuthContext';
 
 function App() {
@@ -35,7 +36,7 @@ function App() {
           </Route>
           
           <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
-            <Route path="/admin/dashboard" element={<div>Admin Dashboard</div>} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
           </Route>
         </Routes>
       </main>
