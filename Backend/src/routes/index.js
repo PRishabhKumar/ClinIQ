@@ -3,7 +3,6 @@ import authRoutes from './auth.routes.js';
 import doctorRoutes from './doctor.routes.js';
 import appointmentRoutes from './appointment.routes.js';
 import adminRoutes from './admin.routes.js';
-import oauthRoutes from './oauth.routes.js';
 
 const router = Router();
 
@@ -11,6 +10,5 @@ router.use('/auth', authRoutes);
 router.use('/doctors', doctorRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/admin', adminRoutes);
-router.use('/oauth', oauthRoutes);
 
 export default router;

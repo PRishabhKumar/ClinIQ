@@ -25,6 +25,8 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    
+    return user;
   };
 
   const register = async (userData) => {

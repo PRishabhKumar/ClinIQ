@@ -181,9 +181,7 @@ class DoctorService {
         // 3. Create NotificationLog entries for each
         const notifications = conflicts.map(c => ({
           appointmentId: c.id,
-          channel: 'EMAIL', // Stubbing email notification
           type: 'LEAVE_CONFLICT',
-          recipient: c.patient.email,
           status: 'PENDING',
         }));
 
@@ -192,10 +190,32 @@ class DoctorService {
         });
       }
 
-      return { leaveDay, conflictsCancelled: conflicts.length };
+      return { leaveDay, conflictsCancelled: conflicts };
     });
 
-    return result;
+    // Outside transaction, delete calendar events
+    if (result.conflictsCancelled && result.conflictsCancelled.length > 0) {
+      try {
+        const doctorProfile = await prisma.doctorProfile.findUnique({
+          where: { id: doctorId },
+          include: { user: true }
+        });
+        const refreshToken = doctorProfile?.user?.googleRefreshToken;
+
+        const calendarService = await import('./calendar.service.js');
+        for (const c of result.conflictsCancelled) {
+          if (c.googleEventId) {
+            await calendarService.deleteEvent(c.googleEventId, refreshToken).catch(err => 
+              console.error(`[addLeaveDay] Failed to delete calendar event ${c.googleEventId}:`, err)
+            );
+          }
+        }
+      } catch (err) {
+        console.error("[addLeaveDay] Failed to initialize calendar service:", err);
+      }
+    }
+
+    return { leaveDay: result.leaveDay, conflictsCancelled: result.conflictsCancelled.length };
   }
 
   async removeLeaveDay(doctorId, leaveId) {
@@ -212,6 +232,54 @@ class DoctorService {
     });
 
     return { success: true };
+  }
+
+  async getDoctorAppointments(userId, dateString) {
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId }
+    });
+
+    if (!doctorProfile) {
+      throw new Error("Doctor profile not found for user");
+    }
+
+    const whereClause = {
+      doctorId: doctorProfile.id
+    };
+
+    if (dateString) {
+      const startOfDay = new Date(dateString);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(dateString);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      whereClause.slotStart = {
+        gte: startOfDay,
+        lt: endOfDay
+      };
+    } else {
+      // Default: fetch from today onwards
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      whereClause.slotStart = {
+        gte: now
+      };
+    }
+
+    const appointments = await prisma.appointment.findMany({
+      where: whereClause,
+      include: {
+        patient: {
+          select: { id: true, name: true, email: true, phone: true }
+        },
+        symptomForm: true,
+        preVisitSummary: true,
+        postVisitSummary: true
+      },
+      orderBy: { slotStart: 'asc' }
+    });
+
+    return appointments;
   }
 }
 

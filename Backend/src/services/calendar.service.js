@@ -1,41 +1,50 @@
 import { google } from 'googleapis';
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
-
-// We assume there's a stored token for the clinic that is loaded elsewhere
-// e.g., oauth2Client.setCredentials({ refresh_token: '...' });
-
-const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-
-export const setCredentials = (tokens) => {
-  oauth2Client.setCredentials(tokens);
+const createOAuthClient = (refreshToken = null) => {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+  );
+  
+  // Use user-specific token if provided, otherwise fallback to env
+  if (refreshToken) {
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+  } else if (process.env.GOOGLE_REFRESH_TOKEN) {
+    oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
+  }
+  
+  return oauth2Client;
 };
 
-export const getAuthUrl = () => {
+// Auth URL for linking calendar (offline access to get refresh token)
+export const getCalendarAuthUrl = (state) => {
+  const oauth2Client = createOAuthClient();
   return oauth2Client.generateAuthUrl({
     access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/calendar.events'],
-    prompt: 'consent' // Force to get refresh token
+    scope: ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/userinfo.email', 'https://www.googleapis.com/auth/userinfo.profile'],
+    prompt: 'consent', // Force to get refresh token
+    state // Can be used to pass userId or action type
   });
 };
 
-export const getToken = async (code) => {
+export const getTokensFromCode = async (code) => {
+  const oauth2Client = createOAuthClient();
   const { tokens } = await oauth2Client.getToken(code);
   return tokens;
 };
 
-export const createEvent = async (appointment) => {
+export const createEvent = async (appointment, refreshToken) => {
   try {
+    const oauth2Client = createOAuthClient(refreshToken);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
     const event = {
       summary: `Appointment with Dr. ${appointment.doctor.user.name}`,
       description: `Appointment ID: ${appointment.id}\nPatient: ${appointment.patientEmail || 'Unknown'}`,
       start: {
         dateTime: appointment.startTime,
-        timeZone: 'UTC', // Ensure timeZone is correct based on requirements
+        timeZone: 'UTC',
       },
       end: {
         dateTime: appointment.endTime,
@@ -63,8 +72,11 @@ export const createEvent = async (appointment) => {
   }
 };
 
-export const updateEvent = async (eventId, appointment) => {
+export const updateEvent = async (eventId, appointment, refreshToken) => {
   try {
+    const oauth2Client = createOAuthClient(refreshToken);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
     const event = {
       summary: `Updated: Appointment with Dr. ${appointment.doctor.user.name}`,
       start: {
@@ -90,8 +102,11 @@ export const updateEvent = async (eventId, appointment) => {
   }
 };
 
-export const deleteEvent = async (eventId) => {
+export const deleteEvent = async (eventId, refreshToken) => {
   try {
+    const oauth2Client = createOAuthClient(refreshToken);
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
     await calendar.events.delete({
       calendarId: 'primary',
       eventId: eventId,

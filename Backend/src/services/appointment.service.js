@@ -156,16 +156,221 @@ class AppointmentService {
 
     // 5. Confirm the slot
     console.log(`[submitSymptoms] Updating appointment status to BOOKED...`);
-    const bookedAppointment = await prisma.appointment.update({
+    let bookedAppointment = await prisma.appointment.update({
       where: { id: appointmentId },
       data: {
         status: 'BOOKED',
         holdExpiresAt: null
+      },
+      include: {
+        doctor: {
+          include: { user: true }
+        },
+        patient: true
       }
     });
+
+    // 6. Create Google Calendar Events (Doctor + Patient)
+    try {
+      const calendarService = await import('./calendar.service.js');
+      const calendarAppt = {
+        id: bookedAppointment.id,
+        doctor: bookedAppointment.doctor,
+        patientEmail: bookedAppointment.patient.email,
+        startTime: bookedAppointment.slotStart.toISOString(),
+        endTime: bookedAppointment.slotEnd.toISOString()
+      };
+
+      const doctorRefreshToken = bookedAppointment.doctor.user.googleRefreshToken;
+      const patientRefreshToken = bookedAppointment.patient.googleRefreshToken;
+
+      const calendarUpdates = {};
+
+      // Doctor's calendar
+      if (doctorRefreshToken) {
+        try {
+          const event = await calendarService.createEvent(calendarAppt, doctorRefreshToken);
+          if (event?.id) {
+            calendarUpdates.googleEventId = event.id;
+            console.log(`[submitSymptoms] Created doctor calendar event: ${event.id}`);
+          }
+        } catch (e) {
+          console.error('[submitSymptoms] Doctor calendar sync failed:', e.message);
+        }
+      }
+
+      // Patient's calendar
+      if (patientRefreshToken) {
+        try {
+          const event = await calendarService.createEvent(calendarAppt, patientRefreshToken);
+          if (event?.id) {
+            calendarUpdates.patientGoogleEventId = event.id;
+            console.log(`[submitSymptoms] Created patient calendar event: ${event.id}`);
+          }
+        } catch (e) {
+          console.error('[submitSymptoms] Patient calendar sync failed:', e.message);
+        }
+      }
+
+      if (!doctorRefreshToken && !patientRefreshToken) {
+        console.log('[submitSymptoms] No Google tokens found for doctor or patient. Skipping calendar sync.');
+      }
+
+      // Save event IDs if any were created
+      if (Object.keys(calendarUpdates).length > 0) {
+        bookedAppointment = await prisma.appointment.update({
+          where: { id: appointmentId },
+          data: calendarUpdates
+        });
+      }
+    } catch (err) {
+      console.error("[submitSymptoms] Calendar sync error:", err);
+      // Don't fail the booking if calendar sync fails
+    }
+
     console.log(`[submitSymptoms] Completed successfully.`);
 
     return bookedAppointment;
+  }
+
+  async getPatientAppointments(patientId) {
+    return await prisma.appointment.findMany({
+      where: { patientId },
+      include: {
+        doctor: {
+          include: {
+            user: {
+              select: { name: true, email: true, phone: true }
+            }
+          }
+        },
+        preVisitSummary: true
+      },
+      orderBy: { slotStart: 'asc' }
+    });
+  }
+
+  async cancelAppointment(appointmentId, patientId) {
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        patientId,
+        status: 'BOOKED'
+      },
+      include: {
+        doctor: {
+          include: { user: true }
+        },
+        patient: true
+      }
+    });
+
+    if (!appointment) {
+      throw new ApiError(404, "Booked appointment not found or cannot be cancelled");
+    }
+
+    const updated = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: 'CANCELLED' }
+    });
+
+    // Delete Google Calendar Events (Doctor + Patient)
+    if (appointment.googleEventId || appointment.patientGoogleEventId) {
+      const calendarService = await import('./calendar.service.js');
+      const doctorRefreshToken = appointment.doctor.user.googleRefreshToken;
+      const patientRefreshToken = appointment.patient?.googleRefreshToken;
+
+      if (appointment.googleEventId && doctorRefreshToken) {
+        try {
+          await calendarService.deleteEvent(appointment.googleEventId, doctorRefreshToken);
+          console.log(`[cancelAppointment] Deleted doctor calendar event: ${appointment.googleEventId}`);
+        } catch (err) {
+          console.error("[cancelAppointment] Failed to delete doctor calendar event:", err.message);
+        }
+      }
+
+      if (appointment.patientGoogleEventId && patientRefreshToken) {
+        try {
+          await calendarService.deleteEvent(appointment.patientGoogleEventId, patientRefreshToken);
+          console.log(`[cancelAppointment] Deleted patient calendar event: ${appointment.patientGoogleEventId}`);
+        } catch (err) {
+          console.error("[cancelAppointment] Failed to delete patient calendar event:", err.message);
+        }
+      }
+    }
+
+    // Create a notification log for the cancellation
+    await prisma.notificationLog.create({
+      data: {
+        appointmentId,
+        type: 'CANCELLATION',
+        status: 'PENDING'
+      }
+    });
+
+    return updated;
+  }
+
+  async completeAppointment(appointmentId, doctorUserId, clinicalNotes) {
+    const doctorProfile = await prisma.doctorProfile.findUnique({
+      where: { userId: doctorUserId }
+    });
+
+    if (!doctorProfile) {
+      throw new ApiError(403, "Not authorized as a doctor");
+    }
+
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        doctorId: doctorProfile.id,
+        status: 'BOOKED'
+      }
+    });
+
+    if (!appointment) {
+      throw new ApiError(404, "Appointment not found or not in BOOKED status");
+    }
+
+    // Call LLM for post visit summary
+    const llmService = (await import('./llm.service.js')).default;
+    let summaryData = null;
+    let rawResponse = null;
+
+    try {
+      const llmResult = await llmService.generatePostVisitSummary(clinicalNotes);
+      if (llmResult.success) {
+        summaryData = llmResult.data;
+        rawResponse = llmResult.rawLlmResponse;
+      } else {
+        throw new ApiError(500, "Failed to generate AI summary: " + llmResult.error);
+      }
+    } catch (error) {
+      throw new ApiError(500, "Error generating AI summary: " + error.message);
+    }
+
+    // Save PostVisitSummary and mark complete
+    const result = await prisma.$transaction(async (tx) => {
+      await tx.postVisitSummary.create({
+        data: {
+          appointmentId,
+          clinicalNotes,
+          patientSummary: summaryData.patientSummary,
+          medicationSchedule: summaryData.medicationSchedule,
+          followUpSteps: summaryData.followUpSteps,
+          rawLlmResponse: rawResponse ? JSON.parse(JSON.stringify(rawResponse)) : null,
+          generatedAt: new Date()
+        }
+      });
+
+      return await tx.appointment.update({
+        where: { id: appointmentId },
+        data: { status: 'COMPLETED' },
+        include: { postVisitSummary: true }
+      });
+    });
+
+    return result;
   }
 }
 

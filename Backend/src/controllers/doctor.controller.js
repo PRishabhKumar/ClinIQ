@@ -18,3 +18,10 @@ export const getAvailability = asyncHandler(async (req, res) => {
   const slots = await doctorService.getAvailability(id, date);
   res.status(200).json(new ApiResponse(200, slots, "Available slots fetched successfully"));
 });
+
+export const getMyAppointments = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { date } = req.query; // optional
+  const appointments = await doctorService.getDoctorAppointments(userId, date);
+  res.status(200).json(new ApiResponse(200, appointments, "Doctor appointments fetched successfully"));
+});

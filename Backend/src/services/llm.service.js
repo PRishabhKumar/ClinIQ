@@ -54,6 +54,59 @@ class LLMService {
       return { success: false, error: error.message };
     }
   }
+
+  async generatePostVisitSummary(clinicalNotes) {
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured.");
+    }
+
+    const prompt = `Convert these clinical notes into a patient-friendly summary, a medication schedule, and follow-up steps. Notes: ${clinicalNotes}`;
+    
+    const config = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          patientSummary: { type: Type.STRING, description: "Patient-friendly summary of the visit" },
+          medicationSchedule: { type: Type.STRING, description: "Clear medication instructions" },
+          followUpSteps: { type: Type.STRING, description: "Next steps for the patient" }
+        },
+        required: ["patientSummary", "medicationSchedule", "followUpSteps"]
+      }
+    };
+
+    try {
+      // Primary model
+      const response = await this.ai.models.generateContent({
+        model: 'gemma-4-31b',
+        contents: prompt,
+        config
+      });
+      return {
+        success: true,
+        data: JSON.parse(response.text),
+        rawLlmResponse: response.text
+      };
+    } catch (primaryError) {
+      console.warn("[LLM Service] gemma-4-31b failed, falling back to gemma-4-26b:", primaryError.message);
+      try {
+        // Fallback model
+        const fallbackResponse = await this.ai.models.generateContent({
+          model: 'gemma-4-26b',
+          contents: prompt,
+          config
+        });
+        return {
+          success: true,
+          data: JSON.parse(fallbackResponse.text),
+          rawLlmResponse: fallbackResponse.text
+        };
+      } catch (fallbackError) {
+        console.error("[LLM Service] Fallback model also failed:", fallbackError);
+        return { success: false, error: fallbackError.message };
+      }
+    }
+  }
 }
 
 export default new LLMService();

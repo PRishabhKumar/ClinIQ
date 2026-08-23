@@ -5,6 +5,8 @@ import { ApiError } from '../utils/ApiError.js';
 import { ApiResponse } from '../utils/response.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { registerSchema, loginSchema } from '../validators/auth.validator.js';
+import { getCalendarAuthUrl, getTokensFromCode } from '../services/calendar.service.js';
+import { google } from 'googleapis';
 
 const generateAccessAndRefreshTokens = (userId) => {
   const accessToken = jwt.sign(
@@ -109,4 +111,81 @@ export const logout = asyncHandler(async (req, res) => {
   // Client is expected to discard tokens on logout. 
   // If we had a token blacklist or stored refresh tokens in DB, we'd clear them here.
   res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
+});
+
+export const googleLogin = asyncHandler(async (req, res) => {
+  // role = PATIENT | DOCTOR | ADMIN, passed as part of state for validation on callback
+  const role = req.query.role || 'PATIENT';
+  const returnTo = req.query.returnTo || '';
+  // Encode both role and returnTo in state as JSON
+  const state = encodeURIComponent(JSON.stringify({ role, returnTo }));
+  const url = getCalendarAuthUrl(state);
+  res.redirect(url);
+});
+
+export const googleCallback = asyncHandler(async (req, res) => {
+  const { code, error, state } = req.query;
+
+  const FRONTEND = 'http://localhost:5173';
+
+  if (error) {
+    return res.redirect(`${FRONTEND}/login?error=oauth_failed`);
+  }
+
+  if (!code) {
+    return res.redirect(`${FRONTEND}/login?error=oauth_failed`);
+  }
+
+  let parsedState = { role: 'PATIENT', returnTo: '' };
+  try {
+    if (state) parsedState = JSON.parse(decodeURIComponent(state));
+  } catch (_) { /* use defaults */ }
+
+  const { role: expectedRole, returnTo } = parsedState;
+
+  try {
+    const tokens = await getTokensFromCode(code);
+
+    // Fetch user info from Google
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials(tokens);
+    const oauth2 = google.oauth2({ auth: oauth2Client, version: 'v2' });
+    const userInfo = await oauth2.userinfo.get();
+    const { id: googleId, email, name } = userInfo.data;
+
+    // LOGIN-ONLY: Look up user by googleId or email
+    let user = await prisma.user.findFirst({
+      where: { OR: [{ googleId }, { email }] }
+    });
+
+    if (!user) {
+      // No account found — do NOT auto-register
+      return res.redirect(`${FRONTEND}/login?error=no_account&email=${encodeURIComponent(email)}`);
+    }
+
+    // Role mismatch — user exists but tried to log in with wrong role button
+    if (user.role !== expectedRole) {
+      return res.redirect(`${FRONTEND}/login?error=unauthorized_role&expectedRole=${expectedRole}&actualRole=${user.role}&email=${encodeURIComponent(email)}`);
+    }
+
+    // Correct role — update Google credentials (googleId link + refresh token)
+    const updateData = {};
+    if (!user.googleId) updateData.googleId = googleId;
+    if (tokens.refresh_token) updateData.googleRefreshToken = tokens.refresh_token;
+
+    if (Object.keys(updateData).length > 0) {
+      user = await prisma.user.update({ where: { id: user.id }, data: updateData });
+    }
+
+    const { accessToken, refreshToken } = generateAccessAndRefreshTokens(user.id);
+    const safeUser = { id: user.id, email: user.email, name: user.name, role: user.role };
+
+    return res.redirect(
+      `${FRONTEND}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}&user=${encodeURIComponent(JSON.stringify(safeUser))}&returnTo=${encodeURIComponent(returnTo)}`
+    );
+
+  } catch (err) {
+    console.error("Google Auth Error:", err);
+    return res.redirect(`${FRONTEND}/login?error=oauth_failed`);
+  }
 });
