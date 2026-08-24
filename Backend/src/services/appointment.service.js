@@ -260,7 +260,8 @@ class AppointmentService {
             }
           }
         },
-        preVisitSummary: true
+        preVisitSummary: true,
+        postVisitSummary: true
       },
       orderBy: { slotStart: 'asc' }
     });

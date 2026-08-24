@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import apiClient from '../api/client';
 import { useAuth } from '../context/AuthContext';
 
 const SymptomIntakeModal = ({ appointmentId, onClose, onBookingComplete }) => {
@@ -16,12 +16,10 @@ const SymptomIntakeModal = ({ appointmentId, onClose, onBookingComplete }) => {
     setError('');
 
     try {
-      const response = await axios.post(`http://localhost:5000/api/v1/appointments/${appointmentId}/symptoms`, {
+      const response = await apiClient.post(`/appointments/${appointmentId}/symptoms`, {
         rawText: symptoms,
         durationDays,
         severity
-      }, {
-        headers: { Authorization: `Bearer ${accessToken}` }
       });
       
       onBookingComplete(response.data.data);
@@ -36,50 +34,50 @@ const SymptomIntakeModal = ({ appointmentId, onClose, onBookingComplete }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">Complete Your Booking</h2>
-        <p className="text-gray-600 mb-6">
+    <div className="fixed inset-0 bg-slate-900 bg-opacity-60 backdrop-blur-sm flex items-center justify-center p-4 z-[60] fade-in-up">
+      <div className="premium-card w-full max-w-lg p-8 max-h-[90vh] overflow-y-auto relative bg-white dark:bg-slate-900 m-auto mt-20 md:mt-auto">
+        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Complete Your Booking</h2>
+        <p className="text-slate-500 dark:text-slate-400 mb-6 font-medium">
           Your slot is temporarily held. Please provide your symptoms so we can prepare for your visit.
         </p>
 
-        {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">{error}</div>}
+        {error && <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 font-medium">{error}</div>}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-gray-700 font-medium mb-2">What are your main symptoms?</label>
+          <div className="mb-6">
+            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-2">What are your main symptoms?</label>
             <textarea 
               required
               rows="4"
-              className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500"
+              className="w-full p-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-200 transition-colors"
               placeholder="E.g., I have had a severe headache and fever..."
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
             ></textarea>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-4 mb-8">
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Duration (Days)</label>
+              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-2">Duration (Days)</label>
               <input 
                 type="number" 
                 min="1"
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-200 transition-colors"
                 value={durationDays}
                 onChange={(e) => setDurationDays(e.target.value)}
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-2">Severity</label>
+              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-2">Severity</label>
               <select 
-                className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                className="w-full p-3 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-lg shadow-sm focus:ring-2 focus:ring-emerald-200 transition-colors cursor-pointer"
                 value={severity}
                 onChange={(e) => setSeverity(e.target.value)}
               >
-                <option value="Low">Low</option>
-                <option value="Medium">Medium</option>
-                <option value="High">High</option>
+                <option value="Low" className="text-slate-900 dark:text-slate-100">Low</option>
+                <option value="Medium" className="text-slate-900 dark:text-slate-100">Medium</option>
+                <option value="High" className="text-slate-900 dark:text-slate-100">High</option>
               </select>
             </div>
           </div>
@@ -89,14 +87,14 @@ const SymptomIntakeModal = ({ appointmentId, onClose, onBookingComplete }) => {
               type="button" 
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium disabled:opacity-50"
+              className="btn-outline disabled:opacity-50 cursor-pointer"
             >
               Cancel Hold
             </button>
             <button 
               type="submit" 
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors disabled:opacity-50 flex items-center"
+              className="btn-primary disabled:opacity-50 flex items-center cursor-pointer"
             >
               {loading ? (
                 <span>Processing...</span>

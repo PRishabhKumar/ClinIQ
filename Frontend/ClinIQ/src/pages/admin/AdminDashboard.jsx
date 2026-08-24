@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
+import Loader from '../../components/Loader';
 
 const DEFAULT_USER_FORM = { 
   email: '', name: '', phone: '', role: 'PATIENT', password: '', 
@@ -129,107 +130,107 @@ export default function AdminDashboard() {
   const patientCount = users.filter(u => u.role === 'PATIENT').length;
   const doctorCount = users.filter(u => u.role === 'DOCTOR').length;
 
-  const TAB_CLASS = (tab) => `px-4 py-2 rounded-t-lg font-semibold text-sm transition ${activeTab === tab ? 'bg-white text-blue-600 border-t border-l border-r border-gray-200' : 'text-gray-500 hover:text-gray-700'}`;
+  const TAB_CLASS = (tab) => `cursor-pointer px-6 py-3 rounded-t-lg font-bold text-sm transition-colors ${activeTab === tab ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 border-t border-l border-r border-slate-200 dark:border-slate-800 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`;
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="flex justify-between items-end mb-8 border-b pb-4">
+    <div className="max-w-6xl mx-auto py-8 px-4 fade-in-up">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 border-b border-slate-200 pb-4">
         <div>
-          <h2 className="text-3xl font-bold text-gray-800">Admin Dashboard</h2>
-          <p className="text-gray-500 mt-1">Manage users, doctors, schedules, and clinic operations.</p>
+          <h2 className="text-3xl font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">Admin Dashboard</h2>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Manage users, doctors, schedules, and clinic operations.</p>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+        <div className="premium-card p-6 flex items-center justify-between premium-hover fade-in-up-delay-1">
           <div>
-            <p className="text-gray-500 text-sm font-medium uppercase">Total Doctors</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{doctorCount}</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wide">Total Doctors</p>
+            <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">{doctorCount}</p>
           </div>
-          <div className="bg-blue-100 text-blue-600 p-3 rounded-full">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          <div className="bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400 p-4 rounded-2xl shadow-sm">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+        <div className="premium-card p-6 flex items-center justify-between premium-hover fade-in-up-delay-2">
           <div>
-            <p className="text-gray-500 text-sm font-medium uppercase">Total Patients</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{patientCount}</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wide">Total Patients</p>
+            <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">{patientCount}</p>
           </div>
-          <div className="bg-green-100 text-green-600 p-3 rounded-full">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+          <div className="bg-teal-100 dark:bg-teal-900/50 text-teal-700 dark:text-teal-400 p-4 rounded-2xl shadow-sm">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex items-center justify-between">
+        <div className="premium-card p-6 flex items-center justify-between premium-hover fade-in-up-delay-3">
           <div>
-            <p className="text-gray-500 text-sm font-medium uppercase">Total Users</p>
-            <p className="text-3xl font-bold text-gray-800 mt-1">{users.length}</p>
+            <p className="text-slate-500 dark:text-slate-400 text-sm font-bold uppercase tracking-wide">Total Users</p>
+            <p className="text-4xl font-extrabold text-slate-800 dark:text-slate-100 mt-2">{users.length}</p>
           </div>
-          <div className="bg-purple-100 text-purple-600 p-3 rounded-full">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+          <div className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 p-4 rounded-2xl shadow-sm">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200 mb-6">
+      <div className="flex gap-2 border-b border-slate-200 mb-8">
         <button className={TAB_CLASS('leave')} onClick={() => setActiveTab('leave')}>Manage Leave</button>
         <button className={TAB_CLASS('users')} onClick={() => setActiveTab('users')}>User Management</button>
       </div>
 
       {/* ─── Leave Tab ─── */}
       {activeTab === 'leave' && (
-        <div>
-          {error && <div className="mb-4 text-red-600 bg-red-100 p-4 rounded-lg font-medium">{error}</div>}
-          {success && <div className="mb-4 text-green-600 bg-green-100 p-4 rounded-lg font-medium">{success}</div>}
+        <div className="fade-in-up">
+          {error && <div className="mb-6 text-red-600 bg-red-50 border border-red-200 p-4 rounded-lg font-medium">{error}</div>}
+          {success && <div className="mb-6 text-emerald-700 bg-emerald-50 border border-emerald-200 p-4 rounded-lg font-medium">{success}</div>}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-              <h3 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Doctor Roster</h3>
-              <ul className="space-y-2">
+            <div className="premium-card p-6">
+              <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">Doctor Roster</h3>
+              <ul className="space-y-3">
                 {doctors.map(doc => (
-                  <li key={doc.id} className="p-3 border rounded flex justify-between items-center bg-gray-50">
+                  <li key={doc.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
                     <div>
-                      <div className="font-medium text-gray-800">{doc.user.name}</div>
-                      <div className="text-sm text-gray-500">{doc.specializations.join(', ')}</div>
+                      <div className="font-bold text-slate-800 dark:text-slate-100">{doc.user.name}</div>
+                      <div className="text-sm font-medium text-emerald-700 dark:text-emerald-400">{doc.specializations.join(', ')}</div>
                     </div>
-                    <button onClick={() => { setSelectedDoctor(doc); setConflicts([]); setLeaveDate(''); }} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition">Manage Leave</button>
+                    <button onClick={() => { setSelectedDoctor(doc); setConflicts([]); setLeaveDate(''); }} className="btn-outline text-sm py-1.5 px-3">Manage Leave</button>
                   </li>
                 ))}
               </ul>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div className="premium-card p-6">
               {selectedDoctor ? (
                 <div>
-                  <h3 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Add Leave for {selectedDoctor.user.name}</h3>
+                  <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">Add Leave for {selectedDoctor.user.name}</h3>
                   <form onSubmit={(e) => handleLeaveSubmit(e, false)} className="space-y-4">
                     <div>
-                      <label className="block text-gray-700 mb-1">Date</label>
-                      <input type="date" required value={leaveDate} onChange={(e) => setLeaveDate(e.target.value)} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" />
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">Date</label>
+                      <input type="date" required value={leaveDate} onChange={(e) => setLeaveDate(e.target.value)} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200" />
                     </div>
                     <div>
-                      <label className="block text-gray-700 mb-1">Reason (Optional)</label>
-                      <input type="text" value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" placeholder="e.g. Sick Leave" />
+                      <label className="block text-slate-700 dark:text-slate-300 font-medium mb-1">Reason (Optional)</label>
+                      <input type="text" value={leaveReason} onChange={(e) => setLeaveReason(e.target.value)} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200" placeholder="e.g. Sick Leave" />
                     </div>
                     {conflicts.length > 0 ? (
-                      <div className="bg-orange-50 border-l-4 border-orange-400 p-4 mb-4">
-                        <p className="text-orange-700 font-semibold mb-2">Warning: The following appointments will be cancelled:</p>
-                        <ul className="list-disc pl-5 mb-4 text-orange-600 text-sm">
+                      <div className="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-500 dark:border-orange-600 p-4 mb-4 rounded-r-lg">
+                        <p className="text-orange-800 dark:text-orange-300 font-bold mb-2">Warning: The following appointments will be cancelled:</p>
+                        <ul className="list-disc pl-5 mb-4 text-orange-700 dark:text-orange-400 text-sm font-medium">
                           {conflicts.map(c => <li key={c.id}>{new Date(c.slotStart).toLocaleTimeString()} - {c.patient.name}</li>)}
                         </ul>
                         <div className="flex gap-2">
-                          <button type="button" onClick={(e) => handleLeaveSubmit(e, true)} className="bg-red-600 text-white px-4 py-2 rounded font-medium hover:bg-red-700 transition" disabled={loading}>{loading ? 'Confirming...' : 'Confirm Cancellation'}</button>
-                          <button type="button" onClick={() => setConflicts([])} className="bg-gray-300 text-gray-700 px-4 py-2 rounded font-medium hover:bg-gray-400 transition">Cancel</button>
+                          <button type="button" onClick={(e) => handleLeaveSubmit(e, true)} className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-red-700 transition cursor-pointer" disabled={loading}>{loading ? 'Confirming...' : 'Confirm Cancellation'}</button>
+                          <button type="button" onClick={() => setConflicts([])} className="btn-outline">Cancel</button>
                         </div>
                       </div>
                     ) : (
-                      <button type="submit" className="w-full bg-blue-600 text-white font-medium py-2 rounded hover:bg-blue-700 transition" disabled={loading}>{loading ? 'Checking...' : 'Check for Conflicts & Add'}</button>
+                      <button type="submit" className="w-full btn-primary" disabled={loading}>{loading ? 'Checking...' : 'Check for Conflicts & Add'}</button>
                     )}
                   </form>
                 </div>
               ) : (
-                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-gray-400 border-2 border-dashed rounded-lg bg-gray-50 p-6">
-                  <svg className="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                  <p>Select a doctor from the roster to manage their leaves.</p>
+                <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-800 p-6">
+                  <svg className="w-16 h-16 mb-4 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                  <p className="font-medium">Select a doctor from the roster to manage their leaves.</p>
                 </div>
               )}
             </div>
@@ -239,52 +240,52 @@ export default function AdminDashboard() {
 
       {/* ─── Users Tab ─── */}
       {activeTab === 'users' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 fade-in-up">
           {/* Add User Form */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Add New User</h3>
-            {userFormError && <div className="mb-3 text-red-600 bg-red-50 border border-red-200 p-3 rounded text-sm">{userFormError}</div>}
-            {userFormSuccess && <div className="mb-3 text-green-600 bg-green-50 border border-green-200 p-3 rounded text-sm">{userFormSuccess}</div>}
+          <div className="premium-card p-6">
+            <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">Add New User</h3>
+            {userFormError && <div className="mb-4 text-red-600 bg-red-50 border border-red-200 p-4 rounded-lg text-sm font-medium">{userFormError}</div>}
+            {userFormSuccess && <div className="mb-4 text-emerald-700 bg-emerald-50 border border-emerald-200 p-4 rounded-lg text-sm font-medium">{userFormSuccess}</div>}
             <form onSubmit={handleAddUser} className="space-y-4">
               <div>
-                <label className="block text-gray-700 text-sm mb-1 font-medium">Role *</label>
-                <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200">
+                <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Role *</label>
+                <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors">
                   <option value="PATIENT">Patient</option>
                   <option value="DOCTOR">Doctor</option>
                   <option value="ADMIN">Admin</option>
                 </select>
               </div>
               <div>
-                <label className="block text-gray-700 text-sm mb-1 font-medium">Full Name *</label>
-                <input type="text" required value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" placeholder="Dr. John Smith" />
+                <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Full Name *</label>
+                <input type="text" required value={userForm.name} onChange={e => setUserForm({...userForm, name: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors" placeholder="Dr. John Smith" />
               </div>
               <div>
-                <label className="block text-gray-700 text-sm mb-1 font-medium">Email (Gmail) *</label>
-                <input type="email" required value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" placeholder="user@gmail.com" />
+                <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Email (Gmail) *</label>
+                <input type="email" required value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors" placeholder="user@gmail.com" />
               </div>
               <div>
-                <label className="block text-gray-700 text-sm mb-1 font-medium">Phone</label>
-                <input type="text" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" placeholder="+91 98765 43210" />
+                <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Phone</label>
+                <input type="text" value={userForm.phone} onChange={e => setUserForm({...userForm, phone: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors" placeholder="+91 98765 43210" />
               </div>
               <div>
-                <label className="block text-gray-700 text-sm mb-1 font-medium">Password <span className="text-gray-400 font-normal">(optional — leave blank if user will sign in with Google)</span></label>
-                <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" placeholder="••••••••" />
+                <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Password <span className="text-slate-400 font-normal">(optional — leave blank if user will sign in with Google)</span></label>
+                <input type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors" placeholder="••••••••" />
               </div>
               {userForm.role === 'DOCTOR' && (
                 <>
                   <div>
-                    <label className="block text-gray-700 text-sm mb-1 font-medium">Specializations * <span className="text-gray-400 font-normal">(comma-separated)</span></label>
-                    <input type="text" required value={userForm.specializations} onChange={e => setUserForm({...userForm, specializations: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" placeholder="Cardiology, Internal Medicine" />
+                    <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Specializations * <span className="text-slate-400 font-normal">(comma-separated)</span></label>
+                    <input type="text" required value={userForm.specializations} onChange={e => setUserForm({...userForm, specializations: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors" placeholder="Cardiology, Internal Medicine" />
                   </div>
                   <div>
-                    <label className="block text-gray-700 text-sm mb-1 font-medium">Slot Duration (minutes) *</label>
-                    <input type="number" required min="10" max="120" value={userForm.slotDurationMin} onChange={e => setUserForm({...userForm, slotDurationMin: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" />
+                    <label className="block text-slate-700 dark:text-slate-300 text-sm mb-1 font-bold">Slot Duration (minutes) *</label>
+                    <input type="number" required min="10" max="120" value={userForm.slotDurationMin} onChange={e => setUserForm({...userForm, slotDurationMin: e.target.value})} className="w-full p-2.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-emerald-200 transition-colors" />
                   </div>
                   <div>
-                    <label className="block text-gray-700 text-sm mb-2 font-medium">Working Hours *</label>
-                    <div className="space-y-2 border rounded p-3 bg-gray-50 max-h-64 overflow-y-auto">
+                    <label className="block text-slate-700 dark:text-slate-300 text-sm mb-2 font-bold">Working Hours *</label>
+                    <div className="space-y-2 border border-slate-200 dark:border-slate-700 rounded-lg p-4 bg-slate-50 dark:bg-slate-800/50 max-h-64 overflow-y-auto shadow-inner">
                       {userForm.workingHours.map((wh, idx) => (
-                        <div key={wh.weekday} className="flex items-center gap-2">
+                        <div key={wh.weekday} className="flex items-center gap-3">
                           <input 
                             type="checkbox" 
                             checked={wh.enabled}
@@ -293,9 +294,9 @@ export default function AdminDashboard() {
                               newWh[idx].enabled = e.target.checked;
                               setUserForm({...userForm, workingHours: newWh});
                             }}
-                            className="mr-2"
+                            className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
                           />
-                          <span className="w-10 font-medium text-sm text-gray-700">{wh.name}</span>
+                          <span className="w-12 font-bold text-sm text-slate-700 dark:text-slate-300">{wh.name}</span>
                           <input 
                             type="time" 
                             disabled={!wh.enabled}
@@ -305,9 +306,9 @@ export default function AdminDashboard() {
                               newWh[idx].startTime = e.target.value;
                               setUserForm({...userForm, workingHours: newWh});
                             }}
-                            className="p-1 border rounded text-sm disabled:opacity-50"
+                            className="p-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-md text-sm disabled:opacity-50"
                           />
-                          <span className="text-gray-500 text-sm">to</span>
+                          <span className="text-slate-500 dark:text-slate-400 text-sm font-medium">to</span>
                           <input 
                             type="time" 
                             disabled={!wh.enabled}
@@ -317,7 +318,7 @@ export default function AdminDashboard() {
                               newWh[idx].endTime = e.target.value;
                               setUserForm({...userForm, workingHours: newWh});
                             }}
-                            className="p-1 border rounded text-sm disabled:opacity-50"
+                            className="p-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-md text-sm disabled:opacity-50"
                           />
                         </div>
                       ))}
@@ -325,33 +326,33 @@ export default function AdminDashboard() {
                   </div>
                 </>
               )}
-              <button type="submit" disabled={addingUser} className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 transition disabled:opacity-60">
+              <button type="submit" disabled={addingUser} className="w-full btn-primary disabled:opacity-60 disabled:cursor-not-allowed mt-2">
                 {addingUser ? 'Adding...' : `Add ${userForm.role.charAt(0) + userForm.role.slice(1).toLowerCase()}`}
               </button>
             </form>
           </div>
 
           {/* User List */}
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
-            <h3 className="text-xl font-bold mb-4 text-gray-800 border-b pb-2">Registered Users</h3>
+          <div className="premium-card p-6">
+            <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100 border-b border-slate-100 dark:border-slate-800 pb-3">Registered Users</h3>
             {usersLoading ? (
-              <p className="text-gray-400 text-center py-8">Loading users...</p>
+              <div className="py-8"><Loader text="Loading users..." /></div>
             ) : (
-              <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+              <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
                 {users.map(u => (
-                  <div key={u.id} className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 hover:bg-gray-100">
-                    <div className="flex items-center gap-3">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase ${u.role === 'DOCTOR' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>{u.role}</span>
+                  <div key={u.id} className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase ${u.role === 'DOCTOR' ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400 border border-teal-200 dark:border-teal-800' : u.role === 'ADMIN' ? 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-600' : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'}`}>{u.role}</span>
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm">{u.name}</p>
-                        <p className="text-gray-500 text-xs">{u.email}</p>
-                        {u.googleId && <p className="text-xs text-green-600">✓ Google Linked</p>}
+                        <p className="font-bold text-slate-800 dark:text-slate-100 text-sm">{u.name}</p>
+                        <p className="text-slate-500 dark:text-slate-400 text-xs font-medium">{u.email}</p>
+                        {u.googleId && <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">✓ Google Linked</p>}
                       </div>
                     </div>
-                    <button onClick={() => handleRemoveUser(u.id, u.name)} className="text-red-500 hover:text-red-700 text-xs font-medium border border-red-200 px-2 py-1 rounded hover:bg-red-50 transition">Remove</button>
+                    <button onClick={() => handleRemoveUser(u.id, u.name)} className="text-red-500 hover:text-red-700 text-xs font-bold border border-red-200 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">Remove</button>
                   </div>
                 ))}
-                {users.length === 0 && <p className="text-gray-400 text-center py-8">No users found.</p>}
+                {users.length === 0 && <p className="text-slate-400 text-center py-8 font-medium">No users found.</p>}
               </div>
             )}
           </div>
