@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from '../config/env';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -23,7 +24,7 @@ const SlotPicker = ({ doctorId, doctorName, onClose }) => {
       setLoading(true);
       setError('');
       try {
-        const response = await axios.get(`http://localhost:5000/api/v1/doctors/${doctorId}/availability?date=${date}`, {
+        const response = await axios.get(`${API_BASE_URL}/doctors/${doctorId}/availability?date=${date}`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
         setSlots(response.data.data);
@@ -41,7 +42,7 @@ const SlotPicker = ({ doctorId, doctorName, onClose }) => {
     setHolding(true);
     setError('');
     try {
-      const response = await axios.post(`http://localhost:5000/api/v1/appointments/hold`, {
+      const response = await axios.post(`${API_BASE_URL}/appointments/hold`, {
         doctorId,
         slotStart,
         slotEnd

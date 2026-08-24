@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import { API_BASE_URL } from '../config/env';
 
 export default function Register() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' });
@@ -56,7 +57,7 @@ export default function Register() {
       <div className="flex flex-col gap-3">
         <GoogleLoginButton 
           text="Sign in with Google" 
-          onClick={() => { window.location.href = `http://localhost:5000/api/v1/auth/google?role=PATIENT` }}
+          onClick={() => { window.location.href = `${API_BASE_URL}/auth/google?role=PATIENT` }}
         />
       </div>
 

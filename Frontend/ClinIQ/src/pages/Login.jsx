@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import { API_BASE_URL } from '../config/env';
 
 export default function Login() {
   const { role = 'patient' } = useParams();
@@ -49,7 +50,7 @@ export default function Login() {
     }
   };
 
-  const BACKEND = 'http://localhost:5000/api/v1';
+  const BACKEND = API_BASE_URL;
 
   return (
     <div className="max-w-md mx-auto mt-10 p-8 premium-card fade-in-up border-t-4 border-t-emerald-600">

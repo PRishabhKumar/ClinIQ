@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import Loader from '../../components/Loader';
 import GoogleLoginButton from '../../components/GoogleLoginButton';
 import toast from 'react-hot-toast';
+import { API_BASE_URL } from '../../config/env';
 
 export default function PatientDashboard() {
   const { user } = useAuth();
@@ -162,7 +163,7 @@ export default function PatientDashboard() {
         ) : (
           <GoogleLoginButton 
             text="Connect Calendar" 
-            onClick={() => { window.location.href = `http://localhost:5000/api/v1/auth/google?role=PATIENT&returnTo=/dashboard` }}
+            onClick={() => { window.location.href = `${API_BASE_URL}/auth/google?role=PATIENT&returnTo=/dashboard` }}
           />
         )}
       </div>
