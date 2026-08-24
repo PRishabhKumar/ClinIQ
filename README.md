@@ -4,29 +4,29 @@ ClinIQ is a modern, AI-powered platform designed to streamline the healthcare ex
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 🧑‍⚕️ For Doctors
+### For Doctors
 - **Personalized Dashboard**: View daily schedules, upcoming appointments, and completed visits at a glance.
 - **AI Pre-Visit Summaries**: Before the patient walks in, review an AI-generated summary of their symptoms, chief complaint, urgency level, and suggested questions.
 - **AI Post-Visit Prescriptions**: Type quick clinical notes, and the AI translates them into a patient-friendly summary, medication schedule, and follow-up plan.
 - **Google Calendar Sync**: Automatically block off time slots in Google Calendar when a patient books an appointment.
 - **Leave Management**: Request leave days which automatically handle conflict resolution by canceling affected appointments and notifying patients.
 
-### 🤒 For Patients
+### For Patients
 - **Smart Booking Flow**: Search for doctors by specialization, pick an available slot, and fill out a pre-visit symptom intake form.
 - **Appointment Management**: View scheduled, completed, and canceled appointments.
 - **Post-Visit Insights**: Access AI-generated, easy-to-read prescription summaries and follow-up instructions right from the dashboard.
 - **Google Calendar Sync**: Add booked appointments directly to personal Google Calendars.
 
-### 👨‍💼 For Administrators
+### For Administrators
 - **Clinic Overview**: Track total doctors, patients, and platform users.
 - **Doctor Roster & Leave Management**: Add leave days for doctors directly, with automatic conflict resolution for overlapping appointments.
 - **User Management**: Register new doctors, admins, and patients. Configure doctor specializations, slot durations, and working hours.
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 **Frontend**
 - **Framework**: React.js (Vite)
@@ -46,7 +46,7 @@ ClinIQ is a modern, AI-powered platform designed to streamline the healthcare ex
 
 ---
 
-## 🚀 Local Development Setup
+## Local Development Setup
 
 ### 1. Database Setup
 Ensure you have a PostgreSQL database running (locally or via a service like Neon/Supabase). 
@@ -96,7 +96,7 @@ The application will be running at `http://localhost:5173`.
 
 ---
 
-## 🧠 AI Prompt Design (Gemini)
+## AI Prompt Design (Gemini)
 
 ClinIQ leverages Google's Gemini AI to process unstructured text into structured healthcare data. 
 
@@ -108,7 +108,7 @@ ClinIQ leverages Google's Gemini AI to process unstructured text into structured
 
 ---
 
-## 📅 Google Calendar & OAuth Setup
+## Google Calendar & OAuth Setup
 
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
 2. Create a new project and enable the **Google Calendar API**.
@@ -119,11 +119,11 @@ ClinIQ leverages Google's Gemini AI to process unstructured text into structured
 
 ---
 
-## ☁️ Deployment
+## Deployment
 
 For detailed deployment instructions, refer to the guides in the `Planning Docs` folder:
 - [Backend Deployment Guide (Render)](./Planning%20Docs/backend_deployment.md)
 - [Frontend Deployment Guide (Vercel)](./Planning%20Docs/frontend_deployment.md)
 
 ---
-*Built with ❤️ for a smarter healthcare future.*
+*Built for a smarter healthcare future.*
