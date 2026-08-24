@@ -76,7 +76,7 @@ export const login = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = generateAccessAndRefreshTokens(user.id);
 
   res.status(200).json(new ApiResponse(200, {
-    user: { id: user.id, email: user.email, name: user.name, role: user.role },
+    user: { id: user.id, email: user.email, name: user.name, role: user.role, googleId: user.googleId },
     accessToken,
     refreshToken
   }, "Logged in successfully"));
@@ -117,8 +117,8 @@ export const googleLogin = asyncHandler(async (req, res) => {
   // role = PATIENT | DOCTOR | ADMIN, passed as part of state for validation on callback
   const role = req.query.role || 'PATIENT';
   const returnTo = req.query.returnTo || '';
-  // Encode both role and returnTo in state as JSON
   const state = encodeURIComponent(JSON.stringify({ role, returnTo }));
+  console.log(`[googleLogin] Initiating login for role: ${role}, returnTo: ${returnTo}, raw state: ${JSON.stringify({ role, returnTo })}, encoded state: ${state}`);
   const url = getCalendarAuthUrl(state);
   res.redirect(url);
 });
@@ -138,10 +138,19 @@ export const googleCallback = asyncHandler(async (req, res) => {
 
   let parsedState = { role: 'PATIENT', returnTo: '' };
   try {
-    if (state) parsedState = JSON.parse(decodeURIComponent(state));
-  } catch (_) { /* use defaults */ }
+    if (state) {
+      const decoded = decodeURIComponent(state);
+      parsedState = JSON.parse(decoded);
+      console.log(`[googleCallback] State parsed successfully:`, parsedState);
+    } else {
+      console.log(`[googleCallback] No state provided.`);
+    }
+  } catch (err) { 
+    console.error(`[googleCallback] Failed to parse state. Raw state: ${state}, Error: ${err.message}`);
+  }
 
   const { role: expectedRole, returnTo } = parsedState;
+  console.log(`[googleCallback] Expecting role: ${expectedRole}`);
 
   try {
     const tokens = await getTokensFromCode(code);
@@ -159,13 +168,25 @@ export const googleCallback = asyncHandler(async (req, res) => {
     });
 
     if (!user) {
-      // No account found — do NOT auto-register
-      return res.redirect(`${FRONTEND}/login?error=no_account&email=${encodeURIComponent(email)}`);
+      if (expectedRole === 'PATIENT') {
+        // Auto-register Patient via Google
+        user = await prisma.user.create({
+          data: {
+            email,
+            name,
+            role: 'PATIENT',
+            googleId
+          }
+        });
+      } else {
+        // No account found — do NOT auto-register doctors or admins
+        return res.redirect(`${FRONTEND}/login/${expectedRole.toLowerCase()}?error=no_account&email=${encodeURIComponent(email)}`);
+      }
     }
 
     // Role mismatch — user exists but tried to log in with wrong role button
     if (user.role !== expectedRole) {
-      return res.redirect(`${FRONTEND}/login?error=unauthorized_role&expectedRole=${expectedRole}&actualRole=${user.role}&email=${encodeURIComponent(email)}`);
+      return res.redirect(`${FRONTEND}/login/${expectedRole.toLowerCase()}?error=unauthorized_role&expectedRole=${expectedRole}&actualRole=${user.role}&email=${encodeURIComponent(email)}`);
     }
 
     // Correct role — update Google credentials (googleId link + refresh token)
@@ -178,7 +199,7 @@ export const googleCallback = asyncHandler(async (req, res) => {
     }
 
     const { accessToken, refreshToken } = generateAccessAndRefreshTokens(user.id);
-    const safeUser = { id: user.id, email: user.email, name: user.name, role: user.role };
+    const safeUser = { id: user.id, email: user.email, name: user.name, role: user.role, googleId: user.googleId };
 
     return res.redirect(
       `${FRONTEND}/auth/callback?accessToken=${accessToken}&refreshToken=${refreshToken}&user=${encodeURIComponent(JSON.stringify(safeUser))}&returnTo=${encodeURIComponent(returnTo)}`

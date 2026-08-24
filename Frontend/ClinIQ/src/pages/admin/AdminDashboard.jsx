@@ -1,7 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../api/client';
 
-const DEFAULT_USER_FORM = { email: '', name: '', phone: '', role: 'PATIENT', password: '', specializations: '', slotDurationMin: 30 };
+const DEFAULT_USER_FORM = { 
+  email: '', name: '', phone: '', role: 'PATIENT', password: '', 
+  specializations: '', slotDurationMin: 30,
+  workingHours: [
+    { weekday: 1, name: 'Mon', enabled: true, startTime: '09:00', endTime: '17:00' },
+    { weekday: 2, name: 'Tue', enabled: true, startTime: '09:00', endTime: '17:00' },
+    { weekday: 3, name: 'Wed', enabled: true, startTime: '09:00', endTime: '17:00' },
+    { weekday: 4, name: 'Thu', enabled: true, startTime: '09:00', endTime: '17:00' },
+    { weekday: 5, name: 'Fri', enabled: true, startTime: '09:00', endTime: '17:00' },
+    { weekday: 6, name: 'Sat', enabled: false, startTime: '09:00', endTime: '13:00' },
+    { weekday: 0, name: 'Sun', enabled: false, startTime: '09:00', endTime: '13:00' }
+  ]
+};
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('leave');
@@ -83,11 +95,18 @@ export default function AdminDashboard() {
       if (payload.role === 'DOCTOR') {
         payload.specializations = payload.specializations.split(',').map(s => s.trim()).filter(Boolean);
         payload.slotDurationMin = parseInt(payload.slotDurationMin) || 30;
+        payload.workingHours = payload.workingHours.filter(wh => wh.enabled).map(wh => ({
+          weekday: wh.weekday,
+          startTime: wh.startTime,
+          endTime: wh.endTime
+        }));
+      } else {
+        delete payload.workingHours;
       }
       if (!payload.password) delete payload.password;
 
       await apiClient.post('/admin/users', payload);
-      setUserFormSuccess(`${payload.role === 'DOCTOR' ? 'Doctor' : 'Patient'} "${payload.name}" added successfully!`);
+      setUserFormSuccess(`${payload.role.charAt(0) + payload.role.slice(1).toLowerCase()} "${payload.name}" added successfully!`);
       setUserForm(DEFAULT_USER_FORM);
       fetchUsers();
     } catch (err) {
@@ -232,6 +251,7 @@ export default function AdminDashboard() {
                 <select value={userForm.role} onChange={e => setUserForm({...userForm, role: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200">
                   <option value="PATIENT">Patient</option>
                   <option value="DOCTOR">Doctor</option>
+                  <option value="ADMIN">Admin</option>
                 </select>
               </div>
               <div>
@@ -260,10 +280,53 @@ export default function AdminDashboard() {
                     <label className="block text-gray-700 text-sm mb-1 font-medium">Slot Duration (minutes) *</label>
                     <input type="number" required min="10" max="120" value={userForm.slotDurationMin} onChange={e => setUserForm({...userForm, slotDurationMin: e.target.value})} className="w-full p-2 border rounded focus:ring focus:ring-blue-200" />
                   </div>
+                  <div>
+                    <label className="block text-gray-700 text-sm mb-2 font-medium">Working Hours *</label>
+                    <div className="space-y-2 border rounded p-3 bg-gray-50 max-h-64 overflow-y-auto">
+                      {userForm.workingHours.map((wh, idx) => (
+                        <div key={wh.weekday} className="flex items-center gap-2">
+                          <input 
+                            type="checkbox" 
+                            checked={wh.enabled}
+                            onChange={(e) => {
+                              const newWh = [...userForm.workingHours];
+                              newWh[idx].enabled = e.target.checked;
+                              setUserForm({...userForm, workingHours: newWh});
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="w-10 font-medium text-sm text-gray-700">{wh.name}</span>
+                          <input 
+                            type="time" 
+                            disabled={!wh.enabled}
+                            value={wh.startTime} 
+                            onChange={(e) => {
+                              const newWh = [...userForm.workingHours];
+                              newWh[idx].startTime = e.target.value;
+                              setUserForm({...userForm, workingHours: newWh});
+                            }}
+                            className="p-1 border rounded text-sm disabled:opacity-50"
+                          />
+                          <span className="text-gray-500 text-sm">to</span>
+                          <input 
+                            type="time" 
+                            disabled={!wh.enabled}
+                            value={wh.endTime} 
+                            onChange={(e) => {
+                              const newWh = [...userForm.workingHours];
+                              newWh[idx].endTime = e.target.value;
+                              setUserForm({...userForm, workingHours: newWh});
+                            }}
+                            className="p-1 border rounded text-sm disabled:opacity-50"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
               <button type="submit" disabled={addingUser} className="w-full bg-blue-600 text-white font-semibold py-2 rounded hover:bg-blue-700 transition disabled:opacity-60">
-                {addingUser ? 'Adding...' : `Add ${userForm.role === 'DOCTOR' ? 'Doctor' : 'Patient'}`}
+                {addingUser ? 'Adding...' : `Add ${userForm.role.charAt(0) + userForm.role.slice(1).toLowerCase()}`}
               </button>
             </form>
           </div>

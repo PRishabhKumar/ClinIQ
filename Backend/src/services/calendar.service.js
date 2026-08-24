@@ -34,26 +34,27 @@ export const getTokensFromCode = async (code) => {
   return tokens;
 };
 
-export const createEvent = async (appointment, refreshToken) => {
+export const createEvent = async (appointment, refreshToken, perspective = 'patient') => {
   try {
     const oauth2Client = createOAuthClient(refreshToken);
     const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
 
+    // Doctor sees patient's name; patient sees doctor's name
+    const summary = perspective === 'doctor'
+      ? `Appointment with ${appointment.patientName || 'Patient'}`
+      : `Appointment with Dr. ${appointment.doctor.user.name}`;
+
     const event = {
-      summary: `Appointment with Dr. ${appointment.doctor.user.name}`,
-      description: `Appointment ID: ${appointment.id}\nPatient: ${appointment.patientEmail || 'Unknown'}`,
+      summary,
+      description: `ClinIQ Appointment ID: ${appointment.id}`,
       start: {
         dateTime: appointment.startTime,
-        timeZone: 'UTC',
+        timeZone: 'Asia/Kolkata',
       },
       end: {
         dateTime: appointment.endTime,
-        timeZone: 'UTC',
+        timeZone: 'Asia/Kolkata',
       },
-      attendees: [
-        { email: appointment.patientEmail || 'patient@example.com' },
-        { email: appointment.doctor.user.email || 'doctor@example.com' }
-      ],
       reminders: {
         useDefault: true,
       },
@@ -62,7 +63,7 @@ export const createEvent = async (appointment, refreshToken) => {
     const res = await calendar.events.insert({
       calendarId: 'primary',
       resource: event,
-      sendUpdates: 'all' // Sends email to attendees
+      sendUpdates: 'none'
     });
     
     return res.data;
@@ -93,7 +94,7 @@ export const updateEvent = async (eventId, appointment, refreshToken) => {
       calendarId: 'primary',
       eventId: eventId,
       resource: event,
-      sendUpdates: 'all'
+      sendUpdates: 'none'
     });
     return res.data;
   } catch (error) {
@@ -110,7 +111,7 @@ export const deleteEvent = async (eventId, refreshToken) => {
     await calendar.events.delete({
       calendarId: 'primary',
       eventId: eventId,
-      sendUpdates: 'all'
+      sendUpdates: 'none'
     });
     return true;
   } catch (error) {

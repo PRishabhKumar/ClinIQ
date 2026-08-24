@@ -3,6 +3,7 @@ import { ProtectedRoute } from './routes/AppRoutes';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import OAuthCallback from './pages/OAuthCallback';
+import RoleSelection from './pages/RoleSelection';
 import DoctorSearch from './pages/patient/DoctorSearch';
 import PatientDashboard from './pages/patient/PatientDashboard';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -53,7 +54,8 @@ function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<div>Home - Welcome to ClinIQ</div>} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<RoleSelection />} />
+          <Route path="/login/:role" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/auth/callback" element={<OAuthCallback />} />
           <Route path="/unauthorized" element={<div className="text-red-500 font-bold">Unauthorized Access</div>} />

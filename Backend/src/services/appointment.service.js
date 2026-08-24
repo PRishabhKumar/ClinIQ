@@ -101,9 +101,9 @@ class AppointmentService {
     // 3. Call LLM (with timeout wrapper)
     const llmService = (await import('./llm.service.js')).default;
     
-    // Create a 8-second timeout promise for the LLM call
+    // Create a 45-second timeout promise for the LLM call
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('LLM Timeout')), 8000)
+      setTimeout(() => reject(new Error('LLM Timeout')), 45000)
     );
 
     let summaryData = null;
@@ -177,6 +177,7 @@ class AppointmentService {
         id: bookedAppointment.id,
         doctor: bookedAppointment.doctor,
         patientEmail: bookedAppointment.patient.email,
+        patientName: bookedAppointment.patient.name,
         startTime: bookedAppointment.slotStart.toISOString(),
         endTime: bookedAppointment.slotEnd.toISOString()
       };
@@ -186,10 +187,10 @@ class AppointmentService {
 
       const calendarUpdates = {};
 
-      // Doctor's calendar
+      // Doctor's calendar — show PATIENT name
       if (doctorRefreshToken) {
         try {
-          const event = await calendarService.createEvent(calendarAppt, doctorRefreshToken);
+          const event = await calendarService.createEvent(calendarAppt, doctorRefreshToken, 'doctor');
           if (event?.id) {
             calendarUpdates.googleEventId = event.id;
             console.log(`[submitSymptoms] Created doctor calendar event: ${event.id}`);
@@ -199,10 +200,10 @@ class AppointmentService {
         }
       }
 
-      // Patient's calendar
+      // Patient's calendar — show DOCTOR name
       if (patientRefreshToken) {
         try {
-          const event = await calendarService.createEvent(calendarAppt, patientRefreshToken);
+          const event = await calendarService.createEvent(calendarAppt, patientRefreshToken, 'patient');
           if (event?.id) {
             calendarUpdates.patientGoogleEventId = event.id;
             console.log(`[submitSymptoms] Created patient calendar event: ${event.id}`);
@@ -220,13 +221,28 @@ class AppointmentService {
       if (Object.keys(calendarUpdates).length > 0) {
         bookedAppointment = await prisma.appointment.update({
           where: { id: appointmentId },
-          data: calendarUpdates
+          data: calendarUpdates,
+          include: {
+            doctor: {
+              include: { user: true }
+            },
+            patient: true
+          }
         });
       }
     } catch (err) {
       console.error("[submitSymptoms] Calendar sync error:", err);
       // Don't fail the booking if calendar sync fails
     }
+
+    // Trigger Booking Confirmation Email
+    await prisma.notificationLog.create({
+      data: {
+        appointmentId,
+        type: 'BOOKING_CONFIRMATION',
+        status: 'PENDING'
+      }
+    });
 
     console.log(`[submitSymptoms] Completed successfully.`);
 
@@ -271,7 +287,11 @@ class AppointmentService {
 
     const updated = await prisma.appointment.update({
       where: { id: appointmentId },
-      data: { status: 'CANCELLED' }
+      data: { 
+        status: 'CANCELLED',
+        googleEventId: null,
+        patientGoogleEventId: null
+      }
     });
 
     // Delete Google Calendar Events (Doctor + Patient)

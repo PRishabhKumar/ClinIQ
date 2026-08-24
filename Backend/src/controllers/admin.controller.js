@@ -32,7 +32,7 @@ export const removeLeaveDay = asyncHandler(async (req, res) => {
 
 export const listUsers = asyncHandler(async (req, res) => {
   const users = await prisma.user.findMany({
-    where: { role: { in: ['PATIENT', 'DOCTOR'] } },
+    where: { role: { in: ['PATIENT', 'DOCTOR', 'ADMIN'] } },
     select: {
       id: true, email: true, name: true, phone: true, role: true, createdAt: true,
       googleId: true,
@@ -46,16 +46,16 @@ export const listUsers = asyncHandler(async (req, res) => {
 });
 
 export const createUser = asyncHandler(async (req, res) => {
-  const { email, name, phone, role, password, specializations, slotDurationMin } = req.body;
+  const { email, name, phone, role, password, specializations, slotDurationMin, workingHours } = req.body;
 
   if (!email || !name || !role) {
     throw new ApiError(400, "email, name, and role are required");
   }
-  if (!['PATIENT', 'DOCTOR'].includes(role)) {
-    throw new ApiError(400, "role must be PATIENT or DOCTOR");
+  if (!['PATIENT', 'DOCTOR', 'ADMIN'].includes(role)) {
+    throw new ApiError(400, "role must be PATIENT, DOCTOR, or ADMIN");
   }
-  if (role === 'DOCTOR' && (!specializations || !slotDurationMin)) {
-    throw new ApiError(400, "Doctors require specializations and slotDurationMin");
+  if (role === 'DOCTOR' && (!specializations || !slotDurationMin || !workingHours)) {
+    throw new ApiError(400, "Doctors require specializations, slotDurationMin, and workingHours");
   }
 
   const existing = await prisma.user.findUnique({ where: { email } });
@@ -70,13 +70,24 @@ export const createUser = asyncHandler(async (req, res) => {
     });
 
     if (role === 'DOCTOR') {
-      await tx.doctorProfile.create({
+      const doctorProfile = await tx.doctorProfile.create({
         data: {
           userId: newUser.id,
           specializations: specializations || [],
           slotDurationMin: parseInt(slotDurationMin) || 30
         }
       });
+
+      if (workingHours && workingHours.length > 0) {
+        await tx.workingHour.createMany({
+          data: workingHours.map(wh => ({
+            doctorId: doctorProfile.id,
+            weekday: wh.weekday,
+            startTime: wh.startTime,
+            endTime: wh.endTime
+          }))
+        });
+      }
     }
 
     return newUser;

@@ -1,9 +1,15 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 
 class LLMService {
   constructor() {
-    // If the key is not present, we will gracefully fallback later in the flow
     this.ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  }
+
+  _extractJson(text) {
+    // Strip markdown code blocks if present
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const cleaned = match ? match[1].trim() : text.trim();
+    return JSON.parse(cleaned);
   }
 
   async generatePreVisitSummary(symptoms) {
@@ -11,47 +17,40 @@ class LLMService {
       throw new Error("GEMINI_API_KEY is not configured.");
     }
 
-    try {
-      const prompt = `Analyse these symptoms and return: urgency level (Low / Medium / High), chief complaint, and three suggested questions for the doctor. Symptoms: ${symptoms}`;
+    const prompt = `You are a medical AI assistant. Analyze the patient's symptoms and respond ONLY with a valid JSON object. Do NOT include any explanation, markdown, or code blocks.
 
-      // Enforce JSON schema to guarantee structured output
+Symptoms: ${symptoms}
+
+Respond with exactly this JSON structure:
+{
+  "urgency": "LOW" | "MEDIUM" | "HIGH",
+  "chiefComplaint": "short clinical summary",
+  "suggestedQuestions": ["question 1", "question 2", "question 3"]
+}`;
+
+    const tryModel = async (modelName) => {
       const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: modelName,
         contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              urgency: {
-                type: Type.STRING,
-                description: "The urgency level: LOW, MEDIUM, or HIGH"
-              },
-              chiefComplaint: {
-                type: Type.STRING,
-                description: "A short clinical summary of the chief complaint"
-              },
-              suggestedQuestions: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.STRING
-                },
-                description: "Three suggested questions for the doctor to ask the patient"
-              }
-            },
-            required: ["urgency", "chiefComplaint", "suggestedQuestions"]
-          }
-        }
       });
+      const text = response.text;
+      console.log(`[LLM Service] Raw response from ${modelName}:`, text?.slice(0, 200));
+      return this._extractJson(text);
+    };
 
-      return {
-        success: true,
-        data: JSON.parse(response.text),
-        rawLlmResponse: response.text
-      };
-    } catch (error) {
-      console.error("[LLM Service] Failed to generate summary:", error);
-      return { success: false, error: error.message };
+    try {
+      console.log('[LLM Service] Calling gemma-4-31b-it...');
+      const data = await tryModel('gemma-4-31b-it');
+      return { success: true, data, rawLlmResponse: JSON.stringify(data) };
+    } catch (primaryError) {
+      console.warn('[LLM Service] Primary model failed:', primaryError.message, '— trying fallback...');
+      try {
+        const data = await tryModel('gemma-4-26b-a4b-it');
+        return { success: true, data, rawLlmResponse: JSON.stringify(data) };
+      } catch (fallbackError) {
+        console.error('[LLM Service] Fallback also failed:', fallbackError.message);
+        return { success: false, error: fallbackError.message };
+      }
     }
   }
 
@@ -60,49 +59,38 @@ class LLMService {
       throw new Error("GEMINI_API_KEY is not configured.");
     }
 
-    const prompt = `Convert these clinical notes into a patient-friendly summary, a medication schedule, and follow-up steps. Notes: ${clinicalNotes}`;
-    
-    const config = {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          patientSummary: { type: Type.STRING, description: "Patient-friendly summary of the visit" },
-          medicationSchedule: { type: Type.STRING, description: "Clear medication instructions" },
-          followUpSteps: { type: Type.STRING, description: "Next steps for the patient" }
-        },
-        required: ["patientSummary", "medicationSchedule", "followUpSteps"]
-      }
+    const prompt = `You are a medical AI assistant. Convert the following clinical notes into a structured patient summary. Respond ONLY with a valid JSON object. Do NOT include any explanation, markdown, or code blocks.
+
+Clinical Notes: ${clinicalNotes}
+
+Respond with exactly this JSON structure:
+{
+  "patientSummary": "patient-friendly summary of the visit",
+  "medicationSchedule": "clear medication instructions",
+  "followUpSteps": "next steps for the patient"
+}`;
+
+    const tryModel = async (modelName) => {
+      const response = await this.ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+      });
+      const text = response.text;
+      console.log(`[LLM Service] Raw response from ${modelName}:`, text?.slice(0, 200));
+      return this._extractJson(text);
     };
 
     try {
-      // Primary model
-      const response = await this.ai.models.generateContent({
-        model: 'gemma-4-31b',
-        contents: prompt,
-        config
-      });
-      return {
-        success: true,
-        data: JSON.parse(response.text),
-        rawLlmResponse: response.text
-      };
+      console.log('[LLM Service] Calling gemma-4-31b-it...');
+      const data = await tryModel('gemma-4-31b-it');
+      return { success: true, data, rawLlmResponse: JSON.stringify(data) };
     } catch (primaryError) {
-      console.warn("[LLM Service] gemma-4-31b failed, falling back to gemma-4-26b:", primaryError.message);
+      console.warn('[LLM Service] Primary model failed:', primaryError.message, '— trying fallback...');
       try {
-        // Fallback model
-        const fallbackResponse = await this.ai.models.generateContent({
-          model: 'gemma-4-26b',
-          contents: prompt,
-          config
-        });
-        return {
-          success: true,
-          data: JSON.parse(fallbackResponse.text),
-          rawLlmResponse: fallbackResponse.text
-        };
+        const data = await tryModel('gemma-4-26b-a4b-it');
+        return { success: true, data, rawLlmResponse: JSON.stringify(data) };
       } catch (fallbackError) {
-        console.error("[LLM Service] Fallback model also failed:", fallbackError);
+        console.error('[LLM Service] Fallback also failed:', fallbackError.message);
         return { success: false, error: fallbackError.message };
       }
     }

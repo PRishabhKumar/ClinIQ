@@ -131,7 +131,7 @@ export default function PatientDashboard() {
           </div>
         ) : (
           <a 
-            href="http://localhost:5000/api/v1/auth/google?returnTo=/dashboard" 
+            href="http://localhost:5000/api/v1/auth/google?role=PATIENT&returnTo=/dashboard" 
             className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 font-medium transition shadow-sm flex items-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">

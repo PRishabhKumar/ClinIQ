@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const GOOGLE_ICON = (
@@ -12,6 +12,10 @@ const GOOGLE_ICON = (
 );
 
 export default function Login() {
+  const { role = 'patient' } = useParams();
+  const normalizedRole = role.toUpperCase();
+  const roleDisplay = role.charAt(0).toUpperCase() + role.slice(1);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -30,7 +34,7 @@ export default function Login() {
   if (oauthError === 'no_account') {
     oauthErrorMsg = `No ClinIQ account found for ${oauthEmail}. Please contact the admin to get registered.`;
   } else if (oauthError === 'unauthorized_role') {
-    oauthErrorMsg = `This email (${oauthEmail}) is registered as a ${actualRole}, not a ${expectedRole}. Please use the correct "Sign in as ${actualRole?.charAt(0) + actualRole?.slice(1).toLowerCase()}" button.`;
+    oauthErrorMsg = `This email (${oauthEmail}) is registered as a ${actualRole}, not a ${expectedRole}. Please use the correct role login page.`;
   } else if (oauthError === 'oauth_failed') {
     oauthErrorMsg = 'Google sign-in failed. Please try again.';
   }
@@ -39,6 +43,12 @@ export default function Login() {
     e.preventDefault();
     try {
       const user = await login(email, password);
+      // Validate role
+      if (user.role !== normalizedRole) {
+        setError(`You are a ${user.role}, but tried to sign in as a ${normalizedRole}.`);
+        return;
+      }
+
       if (user.role === 'ADMIN') navigate('/admin/dashboard');
       else if (user.role === 'DOCTOR') navigate('/doctor/dashboard');
       else navigate('/dashboard');
@@ -50,9 +60,11 @@ export default function Login() {
   const BACKEND = 'http://localhost:5000/api/v1';
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-center text-blue-600 mb-2">Login to ClinIQ</h2>
-      <p className="text-center text-gray-500 text-sm mb-6">Access your account securely</p>
+    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-md border-t-4 border-blue-600">
+      <Link to="/login" className="text-sm text-gray-500 hover:text-blue-600 mb-4 inline-block">&larr; Back to role selection</Link>
+      
+      <h2 className="text-2xl font-bold text-center text-blue-600 mb-2">Sign in as {roleDisplay}</h2>
+      <p className="text-center text-gray-500 text-sm mb-6">Securely access your ClinIQ account</p>
 
       {/* OAuth Error Banner */}
       {oauthErrorMsg && (
@@ -66,42 +78,36 @@ export default function Login() {
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Email</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border rounded" required />
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-colors" required />
         </div>
         <div className="mb-6">
           <label className="block text-gray-700 mb-2">Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-2 border rounded" required />
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-colors" required />
         </div>
-        <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 font-semibold mb-4">
-          Login
+        <button type="submit" className="w-full bg-blue-600 text-white p-2.5 rounded-lg hover:bg-blue-700 font-semibold mb-4 shadow-sm transition">
+          Sign In
         </button>
       </form>
 
       <div className="flex items-center my-5">
         <div className="flex-grow border-t border-gray-200"></div>
-        <span className="px-3 text-gray-400 text-xs font-medium">OR SIGN IN WITH GOOGLE AS</span>
+        <span className="px-3 text-gray-400 text-xs font-medium">OR</span>
         <div className="flex-grow border-t border-gray-200"></div>
       </div>
 
-      {/* Role-specific Google SSO buttons */}
+      {/* Single Role-specific Google SSO button */}
       <div className="flex flex-col gap-3">
-        <a href={`${BACKEND}/auth/google?role=PATIENT`} className="flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-blue-50 hover:border-blue-300 font-medium transition shadow-sm">
+        <a href={`${BACKEND}/auth/google?role=${normalizedRole}`} className="flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-gray-50 font-medium transition shadow-sm">
           {GOOGLE_ICON}
-          <span>Sign in as <strong>Patient</strong></span>
-        </a>
-        <a href={`${BACKEND}/auth/google?role=DOCTOR`} className="flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-green-50 hover:border-green-300 font-medium transition shadow-sm">
-          {GOOGLE_ICON}
-          <span>Sign in as <strong>Doctor</strong></span>
-        </a>
-        <a href={`${BACKEND}/auth/google?role=ADMIN`} className="flex items-center justify-center gap-3 bg-white border border-gray-300 text-gray-700 px-4 py-2.5 rounded-lg hover:bg-purple-50 hover:border-purple-300 font-medium transition shadow-sm">
-          {GOOGLE_ICON}
-          <span>Sign in as <strong>Admin</strong></span>
+          <span>Sign in with <strong>Google</strong></span>
         </a>
       </div>
 
-      <p className="mt-6 text-center text-sm text-gray-500">
-        Don't have an account? <Link to="/register" className="text-blue-600 font-medium">Register</Link>
-      </p>
+      {normalizedRole === 'PATIENT' && (
+        <p className="mt-6 text-center text-sm text-gray-500">
+          Don't have an account? <Link to="/register" className="text-blue-600 font-medium hover:underline">Register</Link>
+        </p>
+      )}
     </div>
   );
 }
